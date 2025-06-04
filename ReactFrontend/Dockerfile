@@ -4,6 +4,7 @@ WORKDIR /app
 COPY ReactFrontend/package.json ./
 RUN npm install
 COPY ReactFrontend/. ./
+RUN ls -l /app/src || true
 RUN ls -l /app/src/claims || true
 RUN npm run build
 
