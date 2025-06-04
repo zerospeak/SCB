@@ -6,7 +6,7 @@ import ClaimDetails from './claims/ClaimDetails';
 import Login from './claims/Login';
 import PrivateRoute from './claims/PrivateRoute';
 import { AuthProvider, useAuth } from './claims/auth';
-import { CssBaseline, Container, AppBar, Toolbar, Button, Typography, Box } from '@mui/material';
+import { CssBaseline, Container, AppBar, Toolbar, Button, Typography, Box, CircularProgress, Snackbar, Alert } from '@mui/material';
 
 const NavBar: React.FC = () => {
   const { isAuthenticated, logout } = useAuth();
@@ -34,21 +34,33 @@ const AppRoutes: React.FC = () => (
     <Route path="/claims/new" element={<PrivateRoute><ClaimForm /></PrivateRoute>} />
     <Route path="/claims/edit/:id" element={<PrivateRoute><ClaimForm /></PrivateRoute>} />
     <Route path="/claims/:id" element={<PrivateRoute><ClaimDetails /></PrivateRoute>} />
+    <Route path="*" element={<Alert severity="error">Page not found</Alert>} />
   </Routes>
 );
 
-const App: React.FC = () => (
-  <AuthProvider>
-    <Router>
-      <CssBaseline />
-      <NavBar />
-      <Container maxWidth="lg">
-        <Box mt={4}>
-          <AppRoutes />
-        </Box>
-      </Container>
-    </Router>
-  </AuthProvider>
-);
+import useVersionCheck from './useVersionCheck';
+
+const App: React.FC = () => {
+  useVersionCheck();
+  // Example: global loading and error state (replace with real state management as needed)
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  return (
+    <AuthProvider>
+      <Router>
+        <CssBaseline />
+        <NavBar />
+        <Container maxWidth="lg">
+          {loading && <Box display="flex" justifyContent="center" mt={4}><CircularProgress /></Box>}
+          {error && <Snackbar open autoHideDuration={6000} onClose={() => setError(null)}><Alert severity="error">{error}</Alert></Snackbar>}
+          <Box mt={4}>
+            <AppRoutes />
+          </Box>
+        </Container>
+      </Router>
+    </AuthProvider>
+  );
+};
 
 export default App;

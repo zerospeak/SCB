@@ -64,7 +64,7 @@ builder.Services.AddAuthorization(options =>
 // Register EF Core DbContext and Identity
 builder.Services.AddDbContext<Api.ClaimsDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ClaimsDb") ??
-        "Server=sql-server;Database=ClaimsDb;User Id=sa;Password=Your_password123;TrustServerCertificate=True;"));
+        "Server=tcp:localhost,1433;Database=ClaimsDb;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;"));
 builder.Services.AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<Api.ClaimsDbContext>()
     .AddDefaultTokenProviders();

@@ -133,6 +133,26 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "Generate Demo Claims (auth)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/claims/generate-demo-claims?count=20",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "claims", "generate-demo-claims"],
+          "query": [
+            { "key": "count", "value": "20" }
+          ]
+        }
+      },
+      "response": []
     }
   ],
   "event": [

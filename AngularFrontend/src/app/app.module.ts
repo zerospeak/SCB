@@ -27,6 +27,8 @@ import { ClaimDetailsComponent } from './claims/claim-details.component';
 import { LoginComponent } from './login.component';
 import { AuthGuard } from './auth.guard';
 
+import { HealthComponent } from './health.component';
+
 const routes: Routes = [
   { path: '', redirectTo: 'claims', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
@@ -34,6 +36,7 @@ const routes: Routes = [
   { path: 'claims/new', component: ClaimFormComponent, canActivate: [AuthGuard] },
   { path: 'claims/edit/:id', component: ClaimFormComponent, canActivate: [AuthGuard] },
   { path: 'claims/:id', component: ClaimDetailsComponent, canActivate: [AuthGuard] },
+  { path: 'health', component: HealthComponent },
 ];
 
 @NgModule({
@@ -42,7 +45,8 @@ const routes: Routes = [
     ClaimsListComponent,
     ClaimFormComponent,
     ClaimDetailsComponent,
-    LoginComponent
+    LoginComponent,
+    HealthComponent
   ],
   imports: [
     BrowserModule,

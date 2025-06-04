@@ -1,0 +1,25 @@
+services:
+  api:
+    build: ./Api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__ClaimsDb=Server=sql-server;Database=ClaimsDb;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;
+    ports:
+      - "5000:80"
+  sql-server:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong!Passw0rd
+    ports:
+      - "1433:1433"
+  reactfrontend:
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000
+    ports:
+      - "5002:3000"
+  angularfrontend:
+    environment:
+      - API_URL=http://localhost:5000/api
+    ports:
+      - "5003:4200"

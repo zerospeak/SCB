@@ -1,52 +1,57 @@
-# HealthGuard Solutions: Insurance Fraud Detection System
+# HealthGuard Dev Environment (Unified)
 
-> Comprehensive platform for insurance fraud detection, featuring secure authentication, robust APIs, professional frontends, and automated ETL and deployment workflows.
+## Onboarding Steps
 
-## Application State (as of 2024-06-03)
-
-- **Authentication & Authorization:**
-  - ASP.NET Core Identity and JWT authentication fully integrated
-  - All endpoints protected by JWT in production; no self-signup
-  - Dev/test admin credentials: `admin` / `Admin!234` (see Postman collection)
-- **API (.NET 8, WebAPI, EF Core):**
-  - Runs in Docker on port 5000
-  - Swagger UI: [http://localhost:5000/swagger](http://localhost:5000/swagger)
-  - CORS enabled for all frontends
-  - EF Core with SQL Server, auto-migrations on startup
-  - Persistent CRUD for Claims
-- **Frontend (Blazor, Angular, React):**
-  - Professional, responsive, fintech-grade UIs
-  - Login, claims list, and forms with Material/Bootstrap, validation, and feedback
-  - JWT-secured API calls
-  - Served via nginx with SPA routing (`try_files $uri $uri/ /index.html;`)
-- **ETL Service:**
-  - Runs in Docker, stays alive for dev/demo
-- **SQL Server (Azure SQL Edge):**
-  - Runs in Docker on port 1433
-  - Data persisted in Docker volume `sql_data`
-- **Dev Script:**
-  - `run-dev.ps1` automates clean, restore, build, migration check, container orchestration, and logs
-- **Postman Collection:**
-  - `HealthGuard.postman_collection.json` for automated API testing with JWT
-- **Documentation:**
-  - All .md files reflect current state, troubleshooting, and run instructions
-
----
-
-## Quick Start
-
-1. Open a terminal in `c:\temp\BCS`.
-2. Run:
-   ```powershell
-   ./setup-dev.ps1
-   ./run-dev.ps1
+1. **Copy .env.example to .env** in each app and fill in secrets/URLs.
+2. **Start SQL Server** (Docker or local) and ensure port 1433 is open.
+3. **Reset/seed dev DB:**
    ```
-   - Installs dependencies, cleans, restores, builds, checks migrations, starts containers, and tails logs.
-   - All frontends auto-configure API URLs for Docker/local dev.
+   cd Api
+   pwsh -File reset-dev-db.ps1
+   ```
+4. **Start API:**
+   ```
+   cd Api
+   dotnet run
+   ```
+5. **Start React Frontend:**
+   ```
+   cd ReactFrontend
+   npm install
+   npm start
+   ```
+6. **Start Angular Frontend:**
+   ```
+   cd AngularFrontend
+   npm install
+   npm start -- --proxy-config proxy.conf.json
+   ```
+7. **Start Blazor/Frontend as needed.**
+8. **Use docker-compose.override.yml** for full-stack local dev if desired.
 
----
+## Scripts
+- `setup-dev.ps1`: Installs all dependencies, sets up config files, builds, and runs a health check.
+- `run-demo.ps1`: Resets DB, starts all services, opens frontend for a demo.
+- `test-all.ps1`: Resets DB and runs all backend, frontend, and ETL tests.
+- `health-check.ps1`: Checks API, frontend, and DB health.
+- `lint-all.ps1`: Lints and formats .NET, Angular, and Python code.
+- `reset-dev-db.ps1`: Drops, recreates, migrates, and seeds ClaimsDb.
+- `npm run lint` / `npm run format`: Lint/format code (React/Angular).
+- `npm run build`: Builds frontend and generates version.txt for cache busting.
+- Husky pre-commit hook: Lint/format before commit (see .huskyrc.json).
 
-## Additional Resources
+## Health Checks
+- API: [http://localhost:5000/health](http://localhost:5000/health)
+- Angular: [http://localhost:4200](http://localhost:4200)
+- React: [http://localhost:5002](http://localhost:5002)
+- ETL/Agent: `/health` endpoints as documented.
 
-- See [PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md) for step-by-step history, lessons learned, and developer tips.
-- For demo instructions, troubleshooting, and deployment, refer to the respective `.md` files in this repository.
+## Best Practices
+- Use in-memory DB for unit tests, real DB for integration/E2E.
+- Never commit secrets to source control.
+- Use version.txt for frontend cache busting.
+- Use lint/format scripts and pre-commit hooks (Husky recommended).
+- Use proxy configs for API calls in dev.
+- Keep all onboarding and environment docs up to date.
+- For a clean slate DB reset, use `docker-compose down -v` then rerun `run-demo.ps1` or `setup-dev.ps1`.
+- If you add new environment/config files, update the corresponding `.sample` file.

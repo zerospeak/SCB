@@ -1,6 +1,18 @@
 # DEV ONLY - DO NOT USE FOR PRODUCTION
 # PowerShell script to reset and start the full dev environment with verbose logging and clean .NET build
 
+# Pre-build check for critical React frontend files
+$reactFiles = @(
+    'ReactFrontend/src/claims/ClaimsList.tsx'
+)
+foreach ($file in $reactFiles) {
+    if (!(Test-Path $file)) {
+        Write-Host "[ERROR] Required file missing: $file" -ForegroundColor Red
+        Write-Host "[INFO] Please add or rename the file to match the import exactly (case-sensitive)." -ForegroundColor Yellow
+        exit 1
+    }
+}
+
 Write-Host "[run-dev.ps1] Cleaning .NET solution..." -ForegroundColor Cyan
 Write-Host "> dotnet clean HealthGuardSolution.sln" -ForegroundColor Yellow
 dotnet clean HealthGuardSolution.sln
@@ -22,13 +34,18 @@ if ($LASTEXITCODE -ne 0) {
 dotnet build HealthGuardSolution.sln -c Release
 
 Write-Host "[run-dev.ps1] WARNING: Dropping existing ClaimsDb database. ALL DATA WILL BE LOST." -ForegroundColor Red
-docker compose exec sql-server /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Your_password123 -Q "DROP DATABASE IF EXISTS [ClaimsDb]"
+docker compose exec sql-server /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd -Q "DROP DATABASE IF EXISTS [ClaimsDb]"
 Write-Host "[run-dev.ps1] Removing old migrations to ensure Identity tables are included..." -ForegroundColor Cyan
 if (Test-Path ./Api/Migrations) {
     Remove-Item ./Api/Migrations/* -Force
 }
 Write-Host "> dotnet ef migrations add InitialIdentity -o Migrations --project Api --startup-project Api" -ForegroundColor Yellow
 dotnet ef migrations add InitialIdentity -o Migrations --project Api --startup-project Api
+
+# Always rebuild all images with no cache to avoid stale build issues
+Write-Host "[run-dev.ps1] Rebuilding all Docker images with --no-cache..." -ForegroundColor Cyan
+Write-Host "> docker-compose build --no-cache" -ForegroundColor Yellow
+docker-compose build --no-cache
 
 # Check if all required containers are up and healthy
 Write-Host "[run-dev.ps1] Checking Docker container health..." -ForegroundColor Cyan

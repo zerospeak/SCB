@@ -14,7 +14,11 @@ namespace Api.Tests
             // Arrange
             var mockMlService = new Mock<IMlService>();
             mockMlService.Setup(s => s.Predict(It.IsAny<Claim>())).ReturnsAsync(0.8);
-            var controller = new ClaimsController(mockMlService.Object);
+            var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<ClaimsDbContext>()
+                .UseInMemoryDatabase("TestDb")
+                .Options;
+            var db = new ClaimsDbContext(options);
+            var controller = new ClaimsController(mockMlService.Object, db);
             var claim = new Claim { ProviderID = "P1", MemberSSN = "123", PaidAmount = 100, IsFraud = null };
 
             // Act

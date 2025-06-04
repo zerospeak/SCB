@@ -4,7 +4,7 @@ const baseUrl = 'http://localhost:5000';
 
 test.describe('Claims CRUD UI', () => {
   test('View claims list', async ({ page }) => {
-    await page.goto(`${baseUrl}/claims`);
+    await page.goto(`${baseUrl}/claims-list`);
     await expect(page.locator('h3', { hasText: 'Claims' })).toBeVisible();
     await expect(page.locator('table')).toBeVisible();
   });

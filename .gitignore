@@ -1,4 +1,21 @@
-# .NET
+# Node
+node_modules/
+build/
+dist/
+.env
+.env.*
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Angular
+.angular/
+
+# VSCode
+.vscode/
+
+# Dotnet
 bin/
 obj/
 *.user
@@ -6,28 +23,23 @@ obj/
 *.userosscache
 *.sln.docstates
 
-# Blazor
-wwwroot/dist/
-
-# SQL
-*.mdf
-*.ldf
-
-# Docker
-**/Dockerfile*
-**/bin/
-**/obj/
-
 # Python
 __pycache__/
 *.pyc
 
-# PowerShell
-*.ps1~
+# Docker
+*.pid
 
-# VS Code
-.vscode/
+# Test/coverage
+coverage/
+*.lcov
 
-# Others
-.env
-secrets.json
+# Misc
+*.log
+.idea/
+
+# React
+*.local
+
+# Husky
+.husky/_/

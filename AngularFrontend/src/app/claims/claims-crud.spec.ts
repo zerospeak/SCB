@@ -19,7 +19,7 @@ test.describe('Angular Claims CRUD UI', () => {
     await page.fill('input[formcontrolname="status"]', 'Submitted');
     await page.fill('input[formcontrolname="amount"]', '1500');
     await page.click('button[type="submit"]:has-text("Save")');
-    await expect(page).toHaveURL(/\/claims$/);
+    await expect(page).toHaveURL(/\/claims-list$/);
     await expect(page.locator('table')).toContainText('CLM-2001');
   });
 
@@ -29,7 +29,7 @@ test.describe('Angular Claims CRUD UI', () => {
     await expect(page.locator('mat-card-title')).toContainText('Edit Claim');
     await page.fill('input[formcontrolname="status"]', 'Reviewed');
     await page.click('button[type="submit"]:has-text("Save")');
-    await expect(page).toHaveURL(/\/claims$/);
+    await expect(page).toHaveURL(/\/claims-list$/);
     await expect(page.locator('table')).toContainText('Reviewed');
   });
 

@@ -10,7 +10,7 @@ services:
     image: mcr.microsoft.com/azure-sql-edge:latest
     environment:
       - ACCEPT_EULA=Y
-      - SA_PASSWORD=Your_password123
+      - SA_PASSWORD=YourStrong!Passw0rd
     ports:
       - "1433:1433"
     volumes:
@@ -36,7 +36,9 @@ services:
     networks:
       - bcsnet
   reactfrontend:
-    build: ./ReactFrontend
+    build:
+      context: .
+      dockerfile: ReactFrontend/Dockerfile
     ports:
       - "5004:80"
     networks:

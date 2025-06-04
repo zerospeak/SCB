@@ -1,13 +1,7 @@
 import axios from 'axios';
 import { Claim } from './types';
 
-function getApiUrl() {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:5000/api/claims';
-  }
-  return 'http://webapi/api/claims';
-}
-const API_URL = getApiUrl();
+const API_URL = process.env.REACT_APP_API_URL || '/api/claims';
 
 // Attach JWT to all requests
 axios.interceptors.request.use(config => {

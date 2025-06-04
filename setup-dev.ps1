@@ -1,148 +1,176 @@
-# DEV ONLY - DO NOT USE FOR PRODUCTION
-# PowerShell script to set up all frontend dependencies and Playwright browsers for dev/CI
+# Setup dev environment script
+# Usage: pwsh -File setup-dev.ps1
 
-# Only allow DB reset in development environment
-if ($env:ASPNETCORE_ENVIRONMENT -and $env:ASPNETCORE_ENVIRONMENT.ToLower() -eq 'development') {
-    $resetDb = Read-Host "[setup-dev.ps1] Do you want to reset the SQL Server database? This will DELETE ALL DATA in 'sql_data' volume. Type 'YES' to confirm, anything else to skip."
-    if ($resetDb -eq 'YES') {
-        Write-Host "[setup-dev.ps1] Stopping containers and removing SQL Server data volume..." -ForegroundColor Yellow
-        docker compose down
-        docker volume rm sql_data
-        docker compose up -d
-        Write-Host "[setup-dev.ps1] Database reset complete. Containers restarted." -ForegroundColor Green
-    }
-} else {
-    Write-Host "[setup-dev.ps1] Database reset is only available in development environment. Current: '$($env:ASPNETCORE_ENVIRONMENT)'" -ForegroundColor Yellow
+$ErrorActionPreference = 'Continue'
+$errors = @()
+
+# Check Docker installed
+try {
+    docker --version | Out-Null
+} catch {
+    Write-Host "[ERROR] Docker is not installed or not in PATH. Please install Docker Desktop." -ForegroundColor Red
+    exit 1
 }
-
-# Ensure Docker is running and all services are up
-Write-Host "[setup-dev.ps1] Checking Docker and required services..." -ForegroundColor Cyan
+# Check Docker running
 try {
     docker info | Out-Null
 } catch {
-    Write-Host "Docker does not appear to be running. Please start Docker Desktop and rerun this script." -ForegroundColor Red
+    Write-Host "[ERROR] Docker daemon is not running. Please start Docker Desktop." -ForegroundColor Red
     exit 1
 }
-$required = @('api', 'frontend', 'angularfrontend', 'reactfrontend', 'sql-server')
-function Wait-For-Containers {
-    param([int]$timeout = 120)
-    $elapsed = 0
-    while ($elapsed -lt $timeout) {
-        $statuses = docker compose ps --format json | ConvertFrom-Json
-        $allHealthy = $true
-        foreach ($name in $required) {
-            $container = $statuses | Where-Object { $_.Name -like "*$name*" }
-            if (-not $container -or $container.State -notlike 'running') {
-                $allHealthy = $false
-                break
+# Check docker-compose.yml exists
+if (!(Test-Path "docker-compose.yml")) {
+    Write-Host "[ERROR] docker-compose.yml not found in project root." -ForegroundColor Red
+    exit 1
+}
+# Validate docker-compose.yml
+try {
+    docker-compose config | Out-Null
+} catch {
+    Write-Host "[ERROR] docker-compose.yml is invalid. Please fix syntax errors." -ForegroundColor Red
+    exit 1
+}
+
+# Stop all running Docker containers to free up ports
+Write-Host "[INFO] Stopping all running Docker containers to free up ports..." -ForegroundColor Cyan
+try {
+    docker ps -q | ForEach-Object { docker stop $_ }
+    Write-Host "[SUCCESS] All running Docker containers stopped." -ForegroundColor Green
+} catch {
+    Write-Host "[WARNING] Could not stop all Docker containers. Continuing..." -ForegroundColor Yellow
+}
+
+# Check required ports before starting containers (if any)
+$requiredPorts = @(5000, 5002, 5003)
+function Test-PortFree {
+    param([int[]]$ports)
+    $inUse = @()
+    foreach ($port in $ports) {
+        $used = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
+        if ($used) { $inUse += $port }
+    }
+    return $inUse
+}
+$busy = Test-PortFree $requiredPorts
+if ($busy.Count -gt 0) {
+    Write-Host "[WARNING] The following ports are already in use and will be released: $($busy -join ', ')" -ForegroundColor Yellow
+    foreach ($port in $busy) {
+        $procs = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | Get-Process -ErrorAction SilentlyContinue
+        if ($procs) {
+            foreach ($proc in $procs) {
+                Write-Host "[INFO] Stopping process using port $port: $($proc.ProcessName) (PID $($proc.Id))" -ForegroundColor Yellow
+                try {
+                    Stop-Process -Id $proc.Id -Force
+                    Write-Host "[SUCCESS] Stopped process $($proc.ProcessName) (PID $($proc.Id)) using port $port." -ForegroundColor Green
+                } catch {
+                    Write-Host "[ERROR] Failed to stop process $($proc.ProcessName) (PID $($proc.Id)) using port $port: $_" -ForegroundColor Red
+                }
             }
+        } else {
+            Write-Host "[INFO] Port $port is in use, but process could not be identified. Please free it manually." -ForegroundColor Yellow
         }
-        if ($allHealthy) { return $true }
-        Start-Sleep -Seconds 3
-        $elapsed += 3
     }
-    return $false
-}
-if (-not (Wait-For-Containers)) {
-    Write-Host "[setup-dev.ps1] Not all containers are up. Starting/rebuilding with docker compose up -d..." -ForegroundColor Yellow
-    docker compose up -d
-    if (-not (Wait-For-Containers)) {
-        Write-Host "[setup-dev.ps1] ERROR: Containers did not become healthy in time." -ForegroundColor Red
+    Start-Sleep -Seconds 2
+    $busy = Test-PortFree $requiredPorts
+    if ($busy.Count -gt 0) {
+        Write-Host "[ERROR] The following ports are STILL in use after attempting to free them: $($busy -join ', ')" -ForegroundColor Red
+        Write-Host "[INFO] Please investigate manually. Try rebooting your system, or check for background services or other Docker Compose projects using these ports." -ForegroundColor Yellow
         exit 1
     }
-} else {
-    Write-Host "[setup-dev.ps1] All containers are up and healthy." -ForegroundColor Green
 }
 
-Write-Host "[setup-dev.ps1] Setting up AngularFrontend dependencies..." -ForegroundColor Cyan
-# Ensure tsconfig.json exists
-if (-not (Test-Path ./AngularFrontend/tsconfig.json)) {
-    Write-Host "Creating default tsconfig.json for AngularFrontend..." -ForegroundColor Yellow
-    Set-Content -Path ./AngularFrontend/tsconfig.json -Value '{
-  "compileOnSave": false,
-  "compilerOptions": {
-    "baseUrl": "./",
-    "outDir": "./dist/out-tsc",
-    "sourceMap": true,
-    "declaration": false,
-    "downlevelIteration": true,
-    "experimentalDecorators": true,
-    "module": "esnext",
-    "moduleResolution": "node",
-    "importHelpers": true,
-    "target": "es2022",
-    "typeRoots": ["node_modules/@types"],
-    "lib": ["es2022", "dom"]
-  },
-  "exclude": ["node_modules", "tmp"]
-}'
-}
-# Ensure tsconfig.app.json exists
-if (-not (Test-Path ./AngularFrontend/tsconfig.app.json)) {
-    Write-Host "Creating default tsconfig.app.json for AngularFrontend..." -ForegroundColor Yellow
-    Set-Content -Path ./AngularFrontend/tsconfig.app.json -Value '{
-  "extends": "./tsconfig.json",
-  "compilerOptions": { "outDir": "./out-tsc/app", "types": [] },
-  "files": ["src/main.ts", "src/polyfills.ts"],
-  "include": ["src/**/*.d.ts", "src/**/*.ts"],
-  "exclude": ["src/test.ts", "src/**/*.spec.ts"]
-}'
-}
-if (-not (Test-Path ./AngularFrontend/node_modules)) {
-    Write-Host "> npm install (AngularFrontend)" -ForegroundColor Yellow
-    Push-Location ./AngularFrontend
-    npm install @angular/material@17 playwright --save-dev --legacy-peer-deps
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "npm install failed in AngularFrontend" -ForegroundColor Red
-        exit 1
-    }
-    npm install --legacy-peer-deps
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "npm install failed in AngularFrontend" -ForegroundColor Red
-        exit 1
-    }
-    npx playwright install
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Playwright install failed in AngularFrontend" -ForegroundColor Red
-        exit 1
-    }
-    Pop-Location
-} else {
-    Write-Host "node_modules already present in AngularFrontend. Skipping npm install." -ForegroundColor Green
-    Push-Location ./AngularFrontend
-    npx playwright install
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Playwright install failed in ReactFrontend" -ForegroundColor Red
-        exit 1
-    }
-    Pop-Location
+Write-Host "[INFO] Installing .NET dependencies..." -ForegroundColor Cyan
+try {
+    dotnet restore Api/Api.csproj
+    dotnet restore Api.Tests/Api.Tests.csproj
+    Write-Host "[SUCCESS] .NET dependencies installed."
+} catch {
+    $errors += "[ERROR] .NET restore failed: $_"
+    Write-Host "[WARNING] .NET restore failed, continuing..." -ForegroundColor Yellow
 }
 
-Write-Host "[setup-dev.ps1] Setting up ReactFrontend dependencies..." -ForegroundColor Cyan
-if (-not (Test-Path ./ReactFrontend/node_modules)) {
-    Write-Host "> npm install (ReactFrontend)" -ForegroundColor Yellow
-    Push-Location ./ReactFrontend
-    npm install @mui/material @emotion/react @emotion/styled axios react-router-dom playwright --save-dev
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "npm install failed in ReactFrontend (dev deps)" -ForegroundColor Red
-        exit 1
-    }
+Write-Host "[INFO] Installing Angular dependencies..." -ForegroundColor Cyan
+try {
+    cd AngularFrontend
     npm install
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "npm install failed in ReactFrontend" -ForegroundColor Red
-        exit 1
-    }
-    npx playwright install
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Playwright install failed in ReactFrontend" -ForegroundColor Red
-        exit 1
-    }
-    Pop-Location
-} else {
-    Write-Host "node_modules already present in ReactFrontend. Skipping npm install." -ForegroundColor Green
-    Push-Location ./ReactFrontend
-    npx playwright install
-    Pop-Location
+    cd ..
+    Write-Host "[SUCCESS] Angular dependencies installed."
+} catch {
+    $errors += "[ERROR] Angular npm install failed: $_"
+    Write-Host "[WARNING] Angular npm install failed, continuing..." -ForegroundColor Yellow
 }
 
-Write-Host "[setup-dev.ps1] All dependencies and Playwright browsers are set up!" -ForegroundColor Green
+Write-Host "[INFO] Installing Python ETL dependencies..." -ForegroundColor Cyan
+try {
+    cd Etl
+    if (Test-Path requirements.txt) { pip install -r requirements.txt }
+    cd ..
+    Write-Host "[SUCCESS] Python dependencies installed."
+} catch {
+    $errors += "[ERROR] Python pip install failed: $_"
+    Write-Host "[WARNING] Python pip install failed, continuing..." -ForegroundColor Yellow
+}
+
+# Copy sample env/config files if missing
+Write-Host "[INFO] Checking for sample environment/config files..." -ForegroundColor Cyan
+try {
+    if (!(Test-Path Api/appsettings.Development.json) -and (Test-Path Api/appsettings.Development.sample.json)) {
+        Copy-Item Api/appsettings.Development.sample.json Api/appsettings.Development.json
+        Write-Host "[SUCCESS] Copied Api/appsettings.Development.sample.json."
+    }
+    if (!(Test-Path AngularFrontend/.env) -and (Test-Path AngularFrontend/.env.sample)) {
+        Copy-Item AngularFrontend/.env.sample AngularFrontend/.env
+        Write-Host "[SUCCESS] Copied AngularFrontend/.env.sample."
+    }
+    if (!(Test-Path Etl/.env) -and (Test-Path Etl/.env.sample)) {
+        Copy-Item Etl/.env.sample Etl/.env
+        Write-Host "[SUCCESS] Copied Etl/.env.sample."
+    }
+} catch {
+    $errors += "[ERROR] Copying sample env/config files failed: $_"
+    Write-Host "[WARNING] Copying sample env/config files failed, continuing..." -ForegroundColor Yellow
+}
+
+Write-Host "[INFO] Running initial build (API, Angular)..." -ForegroundColor Cyan
+try {
+    dotnet build Api/Api.csproj
+    cd AngularFrontend
+    npm run build
+    cd ..
+    Write-Host "[SUCCESS] Initial build completed."
+} catch {
+    $errors += "[ERROR] Initial build failed: $_"
+    Write-Host "[WARNING] Initial build failed, continuing..." -ForegroundColor Yellow
+}
+
+function Test-SqlServerConnection {
+    param([string]$server = "localhost", [int]$port = 1433)
+    try {
+        $tcp = Test-NetConnection -ComputerName $server -Port $port
+        return $tcp.TcpTestSucceeded
+    } catch {
+        return $false
+    }
+}
+
+# Check SQL Server availability before health check or DB operation
+if (-not (Test-SqlServerConnection)) {
+    Write-Host "[ERROR] SQL Server is not running or not accessible on port 1433." -ForegroundColor Red
+    Write-Host "[INFO] Start it with: docker-compose up -d sql-server" -ForegroundColor Yellow
+    $errors += "[ERROR] SQL Server not running."
+} else {
+    Write-Host "[INFO] Running health check..." -ForegroundColor Cyan
+    try {
+        pwsh -File health-check.ps1
+    } catch {
+        $errors += "[ERROR] Health check failed: $_"
+        Write-Host "[WARNING] Health check failed, continuing..." -ForegroundColor Yellow
+    }
+}
+
+if ($errors.Count -eq 0) {
+    Write-Host "[SUCCESS] Dev environment setup complete!" -ForegroundColor Green
+} else {
+    Write-Host "[INFO] Script completed with warnings or errors:" -ForegroundColor Yellow
+    $errors | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
+}
