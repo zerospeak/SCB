@@ -1,0 +1,39 @@
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Authorization
+@using Frontend.Shared
+@inject Frontend.Shared.AuthService AuthService
+@inject NavigationManager Navigation
+
+<Router AppAssembly="typeof(Program).Assembly">
+    <Found Context="routeData">
+        <CascadingAuthenticationState>
+            <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)">
+                <NotAuthorized>
+                    @if (!isAuthenticated && !IsLoginPage())
+                    {
+                        Navigation.NavigateTo("/login", true);
+                    }
+                    else
+                    {
+                        <p>Not authorized.</p>
+                    }
+                </NotAuthorized>
+            </AuthorizeRouteView>
+        </CascadingAuthenticationState>
+    </Found>
+    <NotFound>
+        <LayoutView Layout="typeof(MainLayout)">
+            <p>Sorry, there's nothing at this address.</p>
+        </LayoutView>
+    </NotFound>
+</Router>
+
+@code {
+    private bool isAuthenticated;
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await AuthService.GetToken();
+        isAuthenticated = !string.IsNullOrEmpty(token);
+    }
+    private bool IsLoginPage() => Navigation.Uri.EndsWith("/login");
+}

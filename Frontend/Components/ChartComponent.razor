@@ -1,0 +1,12 @@
+@* Simple ChartComponent placeholder for MVP *@
+<div class="chart-container">
+    <h3>@Title</h3>
+    <div>
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

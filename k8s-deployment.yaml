@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agentic
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: agentic
+  template:
+    metadata:
+      labels:
+        app: agentic
+    spec:
+      containers:
+      - name: agentic
+        image: agentic:latest
+        resources:
+          limits:
+            cpu: "2"
+            memory: 4Gi

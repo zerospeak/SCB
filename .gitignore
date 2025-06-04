@@ -1,0 +1,33 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Blazor
+wwwroot/dist/
+
+# SQL
+*.mdf
+*.ldf
+
+# Docker
+**/Dockerfile*
+**/bin/
+**/obj/
+
+# Python
+__pycache__/
+*.pyc
+
+# PowerShell
+*.ps1~
+
+# VS Code
+.vscode/
+
+# Others
+.env
+secrets.json

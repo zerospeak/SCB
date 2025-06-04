@@ -1,0 +1,135 @@
+@page "/claims/new"
+@page "/claims/edit/{Id:int}"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using System.Net.Http.Json
+
+<PageTitle>Claim Form</PageTitle>
+
+<h3 class="mb-4">@((Id == 0) ? "New Claim" : "Edit Claim")</h3>
+
+<EditForm Model="claim" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="mb-3">
+        <label class="form-label">Claim Number</label>
+        <InputText class="form-control" @bind-value="claim.ClaimNumber" />
+        <ValidationMessage For="@(() => claim.ClaimNumber)" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Policy Holder</label>
+        <InputText class="form-control" @bind-value="claim.PolicyHolder" />
+        <ValidationMessage For="@(() => claim.PolicyHolder)" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Date</label>
+        <InputDate class="form-control" @bind-value="claim.Date" TValue="DateTime" />
+        <ValidationMessage For="@(() => claim.Date)" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Status</label>
+        <InputText class="form-control" @bind-value="claim.Status" />
+        <ValidationMessage For="@(() => claim.Status)" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Amount</label>
+        <InputNumber class="form-control" @bind-value="claim.Amount" TValue="decimal" />
+        <ValidationMessage For="@(() => claim.Amount)" />
+    </div>
+    <div class="d-flex justify-content-between">
+        <button type="button" class="btn btn-secondary" @onclick="GoBack">Cancel</button>
+        <button type="submit" class="btn btn-success">Save</button>
+    </div>
+</EditForm>
+
+@if (showSuccessModal)
+{
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Success</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Claim saved successfully.</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" @onclick="CloseSuccessModal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private ClaimDto claim = new();
+    private bool showSuccessModal = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id != 0)
+        {
+            claim = await Http.GetFromJsonAsync<ClaimDto>(ApiUrl($"/api/claims/{Id}")) ?? new ClaimDto();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (Id == 0)
+        {
+            var response = await Http.PostAsJsonAsync(ApiUrl("/api/claims"), claim);
+            if (response.IsSuccessStatusCode)
+            {
+                showSuccessModal = true;
+            }
+        }
+        else
+        {
+            var response = await Http.PutAsJsonAsync(ApiUrl($"/api/claims/{Id}"), claim);
+            if (response.IsSuccessStatusCode)
+            {
+                showSuccessModal = true;
+            }
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/claims");
+    }
+
+    private void CloseSuccessModal()
+    {
+        showSuccessModal = false;
+        Navigation.NavigateTo("/claims");
+    }
+
+    private string ApiUrl(string path)
+    {
+#if DEBUG
+        return $"http://localhost:5000{path}";
+#else
+        return $"http://webapi{path}";
+#endif
+    }
+
+    public class ClaimDto
+    {
+        public int Id { get; set; }
+        [Required]
+        public string? ClaimNumber { get; set; }
+        [Required]
+        public string? PolicyHolder { get; set; }
+        [Required]
+        public DateTime Date { get; set; } = DateTime.Today;
+        [Required]
+        public string? Status { get; set; }
+        [Range(0, double.MaxValue, ErrorMessage = "Amount must be positive")]
+        public decimal Amount { get; set; }
+    }
+}

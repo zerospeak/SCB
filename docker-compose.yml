@@ -1,0 +1,50 @@
+# DEV ONLY - DO NOT USE FOR PRODUCTION
+services:
+  webapi:
+    build: ./Api
+    ports:
+      - "5000:80"
+    networks:
+      - bcsnet
+  sql-server:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Your_password123
+    ports:
+      - "1433:1433"
+    volumes:
+      - ./Db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - sql_data:/var/opt/mssql
+    networks:
+      - bcsnet
+  etl:
+    image: mcr.microsoft.com/powershell:lts
+    build: ./Etl
+    networks:
+      - bcsnet
+  frontend:
+    build: ./Frontend
+    ports:
+      - "5002:80"
+    networks:
+      - bcsnet
+  angularfrontend:
+    build: ./AngularFrontend
+    ports:
+      - "5003:80"
+    networks:
+      - bcsnet
+  reactfrontend:
+    build: ./ReactFrontend
+    ports:
+      - "5004:80"
+    networks:
+      - bcsnet
+
+volumes:
+  sql_data:
+
+networks:
+  bcsnet:
+    driver: bridge

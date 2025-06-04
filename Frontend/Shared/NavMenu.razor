@@ -1,0 +1,60 @@
+@inject Frontend.Shared.AuthService AuthService
+@inject NavigationManager Navigation
+@using Microsoft.AspNetCore.Components.Routing
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 shadow-sm">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">HealthGuard</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/claims" Match="NavLinkMatch.All">Claims</NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/riskdashboard">Risk Dashboard</NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/claimhistory">Claim History</NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/submitclaim">Submit Claim</NavLink>
+                </li>
+            </ul>
+            <ul class="navbar-nav ms-auto">
+                @if (isAuthenticated)
+                {
+                    <li class="nav-item">
+                        <span class="navbar-text me-2">Signed in</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" @onclick="Logout">Logout</a>
+                    </li>
+                }
+                else
+                {
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/login">Login</NavLink>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</nav>
+
+@code {
+    private bool isAuthenticated;
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await AuthService.GetToken();
+        isAuthenticated = !string.IsNullOrEmpty(token);
+    }
+    private async Task Logout()
+    {
+        await AuthService.Logout();
+        isAuthenticated = false;
+        Navigation.NavigateTo("/login", true);
+    }
+}

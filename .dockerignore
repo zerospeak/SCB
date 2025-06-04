@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+*.mdf
+*.ldf
+.vscode/
+.git/
+.gitignore
+Dockerfile*
+*.suo
+*.user
+*.userosscache
+*.sln.docstates

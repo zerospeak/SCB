@@ -1,0 +1,43 @@
+flowchart TD
+  subgraph Frontend
+    FE[Angular / React / Blazor App]
+  end
+
+  subgraph Backend
+    API[.NET Core API Service]
+    DB[SQL Server]
+  end
+
+  subgraph DevOps
+    CI[CI/CD Pipeline (Azure DevOps)]
+  end
+
+  subgraph Reporting
+    BI[Power BI / SSRS]
+  end
+
+  FE -- HTTP/REST --> API
+  API -- SQL/TCP --> DB
+  BI -- SQL/TCP or HTTP/REST --> DB
+  BI -- HTTP/REST --> API
+
+  CI -- Build/Test/Deploy --> FE
+  CI -- Build/Test/Deploy --> API
+  CI -- Build/Test/Deploy --> DB
+
+  subgraph ETL
+    ADF[Azure Data Factory (External)]
+  end
+
+  ADF -- ETL/ELT --> DB
+  ADF -- API Calls --> API
+
+  %% Docker Desktop orchestration
+  FE -. Docker Network .-> API
+  API -. Docker Network .-> DB
+  FE -. Docker Compose .-> API
+  API -. Docker Compose .-> DB
+  DB -. Docker Volume .-> DB[(Persisted Data)]
+
+  %% Notes
+  note over FE,API,DB: All containers run on Docker Desktop and communicate via internal Docker network

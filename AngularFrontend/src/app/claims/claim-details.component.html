@@ -1,0 +1,24 @@
+<div class="claim-details-container">
+  <mat-card *ngIf="!loading && claim">
+    <mat-card-title>Claim Details</mat-card-title>
+    <mat-card-content>
+      <dl class="row">
+        <dt class="col-sm-4">Claim Number</dt>
+        <dd class="col-sm-8">{{ claim.claimNumber }}</dd>
+        <dt class="col-sm-4">Policy Holder</dt>
+        <dd class="col-sm-8">{{ claim.policyHolder }}</dd>
+        <dt class="col-sm-4">Date</dt>
+        <dd class="col-sm-8">{{ claim.date | date }}</dd>
+        <dt class="col-sm-4">Status</dt>
+        <dd class="col-sm-8">{{ claim.status }}</dd>
+        <dt class="col-sm-4">Amount</dt>
+        <dd class="col-sm-8">{{ claim.amount | currency }}</dd>
+      </dl>
+      <div class="actions">
+        <button mat-stroked-button color="primary" (click)="goBack()">Back</button>
+        <button mat-raised-button color="accent" (click)="editClaim()">Edit</button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+  <mat-progress-bar *ngIf="loading" mode="indeterminate"></mat-progress-bar>
+</div>

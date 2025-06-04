@@ -1,0 +1,62 @@
+flowchart TD
+%% Subsystems
+subgraph Frontend["Frontend"]
+    FE["Angular / React / Blazor App"]
+end
+subgraph Backend["Backend"]
+    API[".NET Core API Service"]
+    DB[(SQL Server)]
+end
+subgraph DevOps["DevOps"]
+    CI["CI/CD Pipeline (Azure DevOps)"]
+end
+subgraph Reporting["Reporting"]
+    BI["Power BI / SSRS"]
+end
+subgraph ETL["ETL"]
+    ADF["Azure Data Factory (External)"]
+end
+%% Data & Control Flows
+FE -- "REST API" --> API
+API -- "SQL/TCP" --> DB
+BI -- "SQL/TCP or API" --> DB
+BI -- "REST API" --> API
+CI -- "Build/Test/Deploy" -.-> FE
+CI -- "Build/Test/Deploy" -.-> API
+CI -- "Build/Test/Deploy" -.-> DB
+ADF -- "ETL/ELT" --> DB
+ADF -- "API Calls" --> API
+FE -. "Docker Network" .-> API
+API -. "Docker Network" .-> DB
+FE -. "Docker Compose" .-> API
+API -. "Docker Compose" .-> DB
+DB === "Docker Volume" ===> PersistedData[("Persisted Data")]
+%% Node class assignments for shading
+class FE frontend;
+class API,DB backend;
+class CI devops;
+class BI reporting;
+class ADF etl;
+class PersistedData dbvol;
+%% Professional color shading for clarity
+classDef frontend fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,color:#0D47A1;
+classDef backend fill:#E8F5E9,stroke:#388E3C,stroke-width:2px,color:#1B5E20;
+classDef devops fill:#FFF3E0,stroke:#F57C00,stroke-width:2px,color:#E65100;
+classDef reporting fill:#F3E5F5,stroke:#8E24AA,stroke-width:2px,color:#4A148C;
+classDef etl fill:#E0F7FA,stroke:#00838F,stroke-width:2px,color:#006064;
+classDef dbvol fill:#F5F5F5,stroke:#757575,stroke-width:2px,color:#212121;
+%% Edge styling for emphasis
+linkStyle 0 stroke:#1976D2,stroke-width:3px;
+linkStyle 1 stroke:#388E3C,stroke-width:3px;
+linkStyle 2 stroke:#8E24AA,stroke-width:2px;
+linkStyle 3 stroke:#8E24AA,stroke-width:2px;
+linkStyle 4 stroke:#F57C00,stroke-width:2px,stroke-dasharray: 4, 2;
+linkStyle 5 stroke:#F57C00,stroke-width:2px,stroke-dasharray: 4, 2;
+linkStyle 6 stroke:#F57C00,stroke-width:2px,stroke-dasharray: 4, 2;
+linkStyle 7 stroke:#00838F,stroke-width:2px;
+linkStyle 8 stroke:#00838F,stroke-width:2px;
+linkStyle 9 stroke:#757575,stroke-width:1.5px,stroke-dasharray: 2, 2;
+linkStyle 10 stroke:#757575,stroke-width:1.5px,stroke-dasharray: 2, 2;
+linkStyle 11 stroke:#757575,stroke-width:1.5px,stroke-dasharray: 2, 2;
+linkStyle 12 stroke:#757575,stroke-width:1.5px,stroke-dasharray: 2, 2;
+linkStyle 13 stroke:#212121,stroke-width:3px;

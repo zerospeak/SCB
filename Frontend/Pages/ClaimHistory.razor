@@ -1,0 +1,91 @@
+@page "/claim-history"
+@inject HttpClient Http
+@using System.Net.Http.Json
+
+<h3>Claim History</h3>
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p style="color:red">@errorMessage</p>
+}
+else if (claims?.Count > 0)
+{
+    <table class="claim-table">
+        <thead>
+            <tr>
+                <th>Provider ID</th>
+                <th>Member SSN</th>
+                <th>Paid Amount</th>
+                <th>Risk Score</th>
+                <th>Timestamp (UTC)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in claims)
+            {
+                <tr>
+                    <td>@c.ProviderID</td>
+                    <td>@c.MemberSSN</td>
+                    <td>@c.PaidAmount</td>
+                    <td>@c.Risk</td>
+                    <td>@c.Timestamp.ToString("u")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No claims submitted yet.</p>
+}
+
+@code {
+    private List<ClaimHistoryItem>? claims;
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (NavigationManager is not null)
+            {
+                var http = Http;
+                claims = await http.GetFromJsonAsync<List<ClaimHistoryItem>>(ApiUrl("/api/claims/history"));
+            }
+            else
+            {
+                errorMessage = "NavigationManager is not available.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        isLoading = false;
+    }
+
+    private string ApiUrl(string path)
+    {
+#if DEBUG
+        return $"http://localhost:5000{path}";
+#else
+        return $"http://webapi{path}";
+#endif
+    }
+
+    [Inject] NavigationManager? NavigationManager { get; set; }
+
+    public class ClaimHistoryItem
+    {
+        public string? ProviderID { get; set; }
+        public string? MemberSSN { get; set; }
+        public decimal PaidAmount { get; set; }
+        public double Risk { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
+}

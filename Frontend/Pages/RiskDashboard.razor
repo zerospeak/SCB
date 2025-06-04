@@ -1,0 +1,97 @@
+@page "/risk-dashboard"
+@using Frontend.Components
+@inject HttpClient Http
+@using System.Net.Http.Json
+
+<h3>Risk Distribution</h3>
+<button @onclick="GenerateDemoClaims">Generate Demo Claims</button>
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p style="color:red">@errorMessage</p>
+}
+else if (riskCounts is not null)
+{
+    <table class="claim-table">
+        <thead>
+            <tr><th>Risk Level</th><th>Count</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Low (&lt;0.33)</td><td>@riskCounts.Low</td></tr>
+            <tr><td>Medium (0.33-0.66)</td><td>@riskCounts.Medium</td></tr>
+            <tr><td>High (&gt;0.66)</td><td>@riskCounts.High</td></tr>
+        </tbody>
+    </table>
+}
+
+@code {
+    private bool isLoading = true;
+    private string? errorMessage;
+    private RiskCounts? riskCounts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRiskCounts();
+    }
+
+    private async Task LoadRiskCounts()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            var http = Http;
+            var claims = await http.GetFromJsonAsync<List<ClaimHistoryItem>>(ApiUrl("/api/claims/history"));
+            riskCounts = new RiskCounts
+            {
+                Low = claims?.Count(c => c.Risk < 0.33) ?? 0,
+                Medium = claims?.Count(c => c.Risk >= 0.33 && c.Risk < 0.66) ?? 0,
+                High = claims?.Count(c => c.Risk >= 0.66) ?? 0
+            };
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        isLoading = false;
+    }
+
+    private async Task GenerateDemoClaims()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            var http = new HttpClient { BaseAddress = new Uri(NavigationManager!.BaseUri) };
+            var resp = await http.PostAsync(ApiUrl("/api/claims/generate-demo-claims?count=20"), null);
+            if (!resp.IsSuccessStatusCode)
+                errorMessage = "Failed to generate demo claims.";
+            await LoadRiskCounts();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        isLoading = false;
+    }
+
+    private string ApiUrl(string path)
+    {
+#if DEBUG
+        return $"http://localhost:5000{path}";
+#else
+        return $"http://webapi{path}";
+#endif
+    }
+
+    [Inject] NavigationManager? NavigationManager { get; set; }
+
+    public class ClaimHistoryItem
+    {
+        public double Risk { get; set; }
+    }
+    public class RiskCounts { public int Low { get; set; } public int Medium { get; set; } public int High { get; set; } }
+}

@@ -1,0 +1,4 @@
+tools:
+  - name: code_analysis
+    endpoint: http://ast-parser:5000
+    scopes: [repo:read]

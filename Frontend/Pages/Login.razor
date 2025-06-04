@@ -1,0 +1,68 @@
+@page "/login"
+@inject Frontend.Shared.AuthService AuthService
+@inject NavigationManager Navigation
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using System.Net.Http.Json
+
+<PageTitle>Login</PageTitle>
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-lg p-4" style="min-width: 350px; max-width: 400px; width: 100%;">
+        <h3 class="mb-4 text-center fw-bold">Sign In</h3>
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="alert alert-danger">@error</div>
+        }
+        <EditForm Model="loginModel" OnValidSubmit="HandleLogin" class="mt-3">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <InputText class="form-control" @bind-value="loginModel.Username" autocomplete="username" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <InputText class="form-control" @bind-value="loginModel.Password" type="password" autocomplete="current-password" />
+            </div>
+            <div class="d-flex justify-content-end mt-4">
+                <button class="btn btn-primary px-4" type="submit">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                </button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private LoginModel loginModel = new();
+    private string? error;
+
+    private async Task HandleLogin()
+    {
+        error = null;
+        if (!string.IsNullOrEmpty(loginModel.Username) && !string.IsNullOrEmpty(loginModel.Password))
+        {
+            var token = await AuthService.Login(loginModel.Username, loginModel.Password);
+            if (string.IsNullOrEmpty(token))
+            {
+                error = "Invalid username or password.";
+            }
+            else
+            {
+                Navigation.NavigateTo("/claims");
+            }
+        }
+        else
+        {
+            error = "Username and password are required.";
+        }
+    }
+
+    public class LoginModel
+    {
+        public string? Username { get; set; }
+        public string? Password { get; set; }
+    }
+}

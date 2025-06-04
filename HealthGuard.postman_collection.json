@@ -1,0 +1,149 @@
+{
+  "info": {
+    "_postman_id": "b1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "HealthGuard API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Automated API tests for HealthGuard. Uses seeded admin credentials.\n\nCORS is open for all origins in dev. No special headers are needed for local testing. Do not set an Origin header in Postman."
+  },
+  "item": [
+    {
+      "name": "Login (get JWT)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Admin!234\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/login",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["login"]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.environment.set('jwt', json.token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Claims (auth)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/claims/history",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "claims", "history"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Claim (auth)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"providerID\": \"P100\",\n  \"memberSSN\": \"123-45-6789\",\n  \"paidAmount\": 1234.56\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/claims",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "claims"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Claim by ID (auth)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/claims/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "claims", "1"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update Claim (auth)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"providerID\": \"P100\",\n  \"memberSSN\": \"123-45-6789\",\n  \"paidAmount\": 1234.56,\n  \"isFraud\": false,\n  \"risk\": 0.5,\n  \"timestamp\": \"2024-06-03T00:00:00Z\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/claims/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "claims", "1"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Claim (auth)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/claims/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "claims", "1"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Ensure JWT is set for all requests after login"
+        ]
+      }
+    }
+  ]
+}

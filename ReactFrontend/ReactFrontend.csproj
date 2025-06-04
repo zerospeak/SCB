@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
+    <TypeScriptToolsVersion>Latest</TypeScriptToolsVersion>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="src\**" />
+    <None Remove="public\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="public\**" CopyToOutputDirectory="PreserveNewest" />
+          </ItemGroup>
+</Project>
